@@ -67,7 +67,8 @@ def insert_following(account_id, following_username):
     conn.commit()
     conn.close()
 
-
+# Check if new following count is greater than stored count, if it is then update the following_count
+#  -> returns true, false or none
 def check_following_count(username, new_count):
     conn = sqlite3.connect('twitter_data.db')
     cursor = conn.cursor()
@@ -82,9 +83,16 @@ def check_following_count(username, new_count):
     if result:
         current_count = result[0]
         if current_count == new_count:
+            print(f"The following count for {username} matches the database.")
             return True
         else:
+            print(f"Updating the following count for {username} in the database.")
+            cursor.execute('''
+            UPDATE TwitterAccounts SET following_count = ? WHERE username = ?
+            ''', (new_count, username))
+            conn.commit()
             return False
     else:
         print(f"No record found for username: {username}")
         return None
+

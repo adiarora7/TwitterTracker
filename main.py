@@ -1,13 +1,14 @@
 import asyncio
 from twscrape import API, gather
 from twscrape.logger import set_log_level
-import sqlite3
-
+from accounts_to_track import accounts_to_track
 from twdb_functions import setup_database, insert_twitter_account, insert_following
 
 #IMPORTANT LINKS
 #https://twiteridfinder.com/
 #https://github.com/vladkens/twscrape/blob/main/twscrape/
+
+
 
 async def main():
     api = API()  # or API("path-to.db") - default is `accounts.db`
@@ -16,14 +17,15 @@ async def main():
     # await api.pool.add_account("berger_joe11181", "8Ct,m#9iZZY%St8", "lonestaraadi@gmail.com", "niggasinparis")
     # await api.pool.login_all()
   
+    #USED TO INITIALIZE twitter_database.db
     setup_database()
 
     # get user by login
-    user_login = "adiarora710"
+    user_login = "eladgil"
     await api.user_by_login(user_login)  # User
 
     # user info
-    user_id = 1213877414800973825
+    user_id = 6535212
     await api.user_by_id(user_id)  # User
     await gather(api.following(user_id, limit=10))  # list[User]
  

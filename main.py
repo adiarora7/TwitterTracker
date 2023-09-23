@@ -19,7 +19,7 @@ async def main():
     setup_database()
 
     for x in accounts_to_track:
-        user_login, user_id = x
+        user_login, display_name, user_id = x
 
         # get user by login
         await api.user_by_login(user_login)  # User
@@ -37,7 +37,7 @@ async def main():
         if not check_following_count(user_login, len(following_list)):
 
             # Insert user_login into the database and retrieve its account_id
-            account_id = insert_twitter_account(user_login, len(following_list))
+            account_id = insert_twitter_account(user_login, display_name, len(following_list))
 
             # Insert every user from the following list into the database
             for username in following_list:
@@ -45,8 +45,9 @@ async def main():
 
         print(f"done{x}")
 
-    message = format_following_message()
-    send_email("Today's New Followings", message)
+#comment out below lines if you're uploading user for first time
+    # message = format_following_message()
+    # send_email("Today's New Followings", message)
 
 if __name__ == "__main__":
     asyncio.run(main())

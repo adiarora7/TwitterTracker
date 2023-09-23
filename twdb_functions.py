@@ -19,6 +19,7 @@ def setup_database():
     CREATE TABLE IF NOT EXISTS TwitterAccounts (
         account_id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL UNIQUE,
+        display_name TEXT NOT NULL,
         following_count INTEGER
     )
     ''')
@@ -43,14 +44,14 @@ def setup_database():
 
 
 #insert twitter account into TwitterAccounts - ignores duplicate entries.
-def insert_twitter_account(username, following_count):
+def insert_twitter_account(username, display_name, following_count):
     conn = sqlite3.connect('twitter_data.db')
     enable_foreign_keys(conn)
     cursor = conn.cursor()
     
     cursor.execute('''
-    INSERT OR IGNORE INTO TwitterAccounts (username, following_count) VALUES (?, ?)
-    ''', (username, following_count))
+    INSERT OR IGNORE INTO TwitterAccounts (username, display_name, following_count) VALUES (?, ?, ?)
+    ''', (username, display_name, following_count))
     
     cursor.execute('''
     SELECT account_id FROM TwitterAccounts WHERE username = ?
@@ -117,7 +118,7 @@ def get_todays_followings():
     cursor = conn.cursor()
 
     cursor.execute('''
-    SELECT ta.username, f.following_username 
+    SELECT ta.display_name, f.following_username 
     FROM Followings f
     JOIN TwitterAccounts ta ON f.account_id = ta.account_id
     WHERE f.date_added = DATE('now')

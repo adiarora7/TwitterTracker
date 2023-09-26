@@ -2,6 +2,14 @@ import sqlite3
 from datetime import datetime
 import smtplib
 from email.message import EmailMessage
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+BOT_EMAIL = os.getenv('BOT_EMAIL')
+RECIPIENT = os.getenv('RECIPIENT')
+BOT_EMAIL_PW = os.getenv('BOT_EMAIL_PW')
 
 def enable_foreign_keys(connection):
     cursor = connection.cursor()
@@ -39,7 +47,6 @@ def setup_database():
     #Commit changes and close the connection
     conn.commit()
     conn.close()
-
 
 
 
@@ -81,7 +88,8 @@ def insert_following(account_id, following_username):
 
 
 
-# Check if new following count is greater than stored count, if it is then update the following_count
+# Check if new following count is greater than stored count,
+# if it is then update the following_count
 #  -> returns true, false or none
 def check_following_count(username, new_count):
     conn = sqlite3.connect('twitter_data.db')
@@ -92,12 +100,12 @@ def check_following_count(username, new_count):
     ''', (username,))
     result = cursor.fetchone()
 
-    conn.close()
-
     if result:
         current_count = result[0]
         if current_count == new_count:
-            print(f"The following count for {username} matches the database.")
+            print(f"The following count for {username} matches the database. The new count is {new_count} and the current is {current_count}")
+            cursor.close()
+            conn.close()
             return True
         else:
             print(f"Updating the following count for {username} in the database.")
@@ -105,30 +113,71 @@ def check_following_count(username, new_count):
             UPDATE TwitterAccounts SET following_count = ? WHERE username = ?
             ''', (new_count, username))
             conn.commit()
+            cursor.close()
+            conn.close()
             return False
     else:
         print(f"No record found for username: {username}")
+        cursor.close()
+        conn.close()
         return None
 
 
 
-#grabs data as follows [[userA, userX], [userA, userY], [userB, userZ]] where [0] follows [1]
+# #grabs data as follows [[userA, userX], [userA, userY], [userB, userZ]]
+#  where within [],[0] follows [1]
+
+# def get_todays_followings():
+#     conn = sqlite3.connect('twitter_data.db')
+#     cursor = conn.cursor()
+
+#     cursor.execute('''
+#     SELECT ta.display_name, f.following_username 
+#     FROM Followings f
+#     JOIN TwitterAccounts ta ON f.account_id = ta.account_id
+#     WHERE f.date_added = DATE('now')
+#     ''')
+
+#     followings = cursor.fetchall()
+#     conn.close()
+
+#     return followings
+
 def get_todays_followings():
     conn = sqlite3.connect('twitter_data.db')
     cursor = conn.cursor()
 
+    #Fetch accounts with followings from any day prior to today
+    # (=> so there aren't any accounts within the daily message 
+    # that got initialized today. Whole following list would be in the message then)
     cursor.execute('''
+    SELECT DISTINCT ta.account_id 
+    FROM Followings f
+    JOIN TwitterAccounts ta ON f.account_id = ta.account_id
+    WHERE f.date_added < DATE('now')
+    ''')
+
+    accounts_with_prior_followings = [row[0] for row in cursor.fetchall()]
+
+    if not accounts_with_prior_followings:
+        return []
+
+    #Get today's followings only for accounts that had followings prior to today
+    placeholders = ', '.join(['?'] * len(accounts_with_prior_followings))
+    query = '''
     SELECT ta.display_name, f.following_username 
     FROM Followings f
     JOIN TwitterAccounts ta ON f.account_id = ta.account_id
     WHERE f.date_added = DATE('now')
-    ''')
+    AND ta.account_id IN ({})
+    '''.format(placeholders)
+
+    cursor.execute(query, accounts_with_prior_followings)
 
     followings = cursor.fetchall()
     conn.close()
 
     return followings
-
 
 
 #Takes data ^ and creates a dictionary, then formats data into message
@@ -152,9 +201,9 @@ def format_following_message():
 
     messages = '\n\n'.join(messages)
     current_date = datetime.now().strftime('%Y-%m-%d')
-    final_message = (f"Hey Nikita, today \n\n"
+    final_message = (f"Hey! Today \n\n"
                      f"{messages} \n\n"
-                     f"Sent on {current_date} by Adi's Bot.")
+                     f"Sent on {current_date} by the Twitter Bot.")
     
     return final_message
 
@@ -164,12 +213,12 @@ def send_email(subject, body):
     msg = EmailMessage()
     msg.set_content(body)
     msg['Subject'] = subject
-    msg['From'] = 'twleadbot@gmail.com'
-    msg['To'] = 'adiarora710@gmail.com'
+    msg['From'] = BOT_EMAIL
+    msg['To'] = RECIPIENT
 
-    # Establish a connection to the email server (replace this with your email provider's SMTP server and port)
+    # connect to the email server (email provider's SMTP server and port)
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.starttls()
-    server.login('twleadbot@gmail.com', 'mewh fwhl bbpe uexx') 
+    server.login(BOT_EMAIL, BOT_EMAIL_PW) 
     server.send_message(msg)
     server.quit()

@@ -1,8 +1,10 @@
 import asyncio
 from twscrape import API, gather
 from twscrape.logger import set_log_level
-from accounts_to_track import accounts_to_track
+from accounts_to_track import accounts_to_track, twitter_accounts
 from twdb_functions import setup_database, insert_twitter_account, insert_following, check_following_count, format_following_message, send_email
+
+
 
 #IMPORTANT LINKS
 #https://twiteridfinder.com/
@@ -10,9 +12,12 @@ from twdb_functions import setup_database, insert_twitter_account, insert_follow
 
 async def main():
     api = API()  # or API("path-to.db") - default is `accounts.db`
-    # conn = sqlite3.connect('observers.db')
-    # cur = conn.cursor()
-    # await api.pool.add_account("berger_joe11181", "8Ct,m#9iZZY%St8", "lonestaraadi@gmail.com", "niggasinparis")
+
+    # LOGIN
+    # t = twitter_accounts
+
+    # await api.pool.add_account("t[0][0]", "t[0][1]", "t[0][2]", "t[0][3]")
+    # await api.pool.add_account(t[1][0], t[1][1], t[1][2], t[1][3])
     # await api.pool.login_all()
   
     #USED TO INITIALIZE twitter_database.db
@@ -25,7 +30,6 @@ async def main():
         await api.user_by_login(user_login)  # User
 
         # user info
-        # user_id = 6535212
         await api.user_by_id(user_id)  # User
         await gather(api.following(user_id, limit=10))  # list[User]
  
@@ -36,6 +40,7 @@ async def main():
 
         if not check_following_count(user_login, len(following_list)):
 
+            print("Entered loop to update list")
             # Insert user_login into the database and retrieve its account_id
             account_id = insert_twitter_account(user_login, display_name, len(following_list))
 
@@ -46,8 +51,8 @@ async def main():
         print(f"done{x}")
 
 #comment out below lines if you're uploading user for first time
-    # message = format_following_message()
-    # send_email("Today's New Followings", message)
+    message = format_following_message()
+    send_email("Today's New Followings", message)
 
 if __name__ == "__main__":
     asyncio.run(main())

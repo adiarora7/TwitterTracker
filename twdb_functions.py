@@ -196,14 +196,21 @@ def format_following_message():
     # Formatting the message
     messages = []
     for account, follows in grouped.items():
-        follow_string = '\n'+'\n'.join(follows)
+        follow_links = [f'<a href="https://twitter.com/{follow}">{follow}</a>' for follow in follows]
+        follow_string = '\n'+'\n'.join(follow_links)
         messages.append(f"{account} followed {follow_string}.")
 
+
+    # Join all "A followed BCD" and then replace newline chars with <br>'s
+    #format message together
     messages = '\n\n'.join(messages)
+    messages_br = messages.replace('\n', '<br>')
     current_date = datetime.now().strftime('%Y-%m-%d')
-    final_message = (f"Hey! Today \n\n"
-                     f"{messages} \n\n"
-                     f"Sent on {current_date} by the Twitter Bot.")
+    final_message = (f"<html><body>"
+                     f"Hey! Today <br><br>"
+                     f"{messages_br} <br><br>"
+                     f"Sent on {current_date} by the Twitter Bot."
+                     f"</body></html>")
     
     return final_message
 
@@ -211,7 +218,7 @@ def format_following_message():
 
 def send_email(subject, body):
     msg = EmailMessage()
-    msg.set_content(body)
+    msg.set_content(body, subtype='html')
     msg['Subject'] = subject
     msg['From'] = BOT_EMAIL
     msg['To'] = RECIPIENT
